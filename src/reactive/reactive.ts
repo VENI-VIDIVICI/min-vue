@@ -1,3 +1,4 @@
+import { trigger, track } from './effect';
 export const enum ReactiveFlags {
   SKIP = '__v_skip',
   IS_REACTIVE = '__v_isReactive',
@@ -12,6 +13,10 @@ export interface Target {
   [ReactiveFlags.IS_SHALLOW]?: boolean;
   [ReactiveFlags.RAW]?: any;
 }
+function isObject(value: unknown): value is object {
+  return value !== null && typeof value == 'object';
+}
+export function reactive<T>(target: T): T;
 export function reactive(target: object) {
   return new Proxy(target, {
     get(target: Target, key: string | symbol, receiver: object) {
@@ -19,9 +24,21 @@ export function reactive(target: object) {
         return true;
       }
       let res = Reflect.get(target, key, receiver);
+      track(target, key);
       return res;
     },
-    set() {},
+    set(
+      target: object,
+      key: string | symbol,
+      value: unknown,
+      receiver: object
+    ) {
+      const result = Reflect.set(target, key, value, receiver);
+      if (isObject(result)) {
+      }
+      trigger(target, key);
+      return result;
+    },
   });
 }
 
